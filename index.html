@@ -57,21 +57,15 @@
 <body class="bg-slate-900 text-gray-300 min-h-screen p-4 sm:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <!-- ヘッダー (変更: text-centerを追加) -->
         <header class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-white mb-2">画像ファイル変換ツール</h1>
         </header>
 
-        <!-- 2カラムレイアウトコンテナ -->
         <div class="flex flex-col md:flex-row md:space-x-8">
 
-            <!-- 左カラム (ファイル入力 + 変換オプション) -->
             <div class="md:w-2/5 flex flex-col">
 
-                <!-- 1. ファイル入力エリア (左カラム) -->
-                <!-- (変更: transition-colors duration-300 を削除) -->
                 <div id="drop-zone" class="border-4 border-dashed border-slate-700 rounded-lg p-8 text-center cursor-pointer hover:border-blue-600 hover:bg-slate-800 h-96 flex flex-col">
-                    <!-- ファイル入力本体は非表示にし、labelで操作する -->
                     <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/heic,image/heif,image/gif" class="hidden">
                     <label for="file-input" class="cursor-pointer flex flex-col items-center justify-center h-full w-full">
                         <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -79,45 +73,30 @@
                         </svg>
                         <p class="mt-2 text-lg font-semibold text-white">ファイルをドラッグ＆ドロップ</p>
                         <p class="text-sm text-slate-400">またはクリックしてファイルを選択</p>
-                        <!-- 文言変更 -->
                         <p class="text-xs text-slate-500 mt-2">対応: JPEG, PNG, WebP, BMP, HEIC, GIF</p>
                     </label>
                 </div>
                 
-                <!-- (変換オプションはここから移動) -->
-
-            </div> <!-- 左カラム終了 -->
-
-            <!-- 3. メディアプール (右カラム) -->
-            <section id="media-pool-section" class="mt-8 md:mt-0 md:w-3/5 flex flex-col">
-                <!-- HEIC変換中のローディング表示 -->
+                </div> <section id="media-pool-section" class="mt-8 md:mt-0 md:w-3/5 flex flex-col">
                 <div id="loading-indicator" class="hidden text-center p-4 bg-slate-800 rounded-lg mb-4">
                     <p class="text-slate-300 animate-pulse">HEICファイルを変換中...</p>
                 </div>
 
-                <!-- 見出しとリストをまとめるコンテナ (h-96に固定) -->
                 <div class="bg-slate-800 rounded-lg p-4 flex flex-col h-96">
-                    <!-- (変更) 見出しとクリアボタンをフレックスコンテナで囲む -->
                     <div class="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 class="text-2xl font-semibold text-white">メディアプール</h2>
-                        <!-- (変更) クリアボタンのスタイル変更、アイコン削除 -->
                         <button id="clear-pool-btn" class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" title="すべてクリア" disabled>
                             すべてクリア
                         </button>
                     </div>
                     
-                    <!-- メディアリスト (残りの高さを埋める) -->
                     <ul id="media-list" class="space-y-2 overflow-y-auto flex-grow h-0">
                         <li id="empty-pool-message" class="text-slate-400 text-center py-16">メディアファイルがありません</li>
                     </ul>
                 </div>
             </section>
         
-        </div> <!-- 2カラムレイアウトコンテナ終了 -->
-
-        <!-- 2. 変換オプション (変更: 2カラムコンテナの外、フッターの上に移動) -->
-        <div id="conversion-options" class="mt-8 p-4 bg-slate-800 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-4 w-full">
-            <!-- 変換先プルダウン -->
+        </div> <div id="conversion-options" class="mt-8 p-4 bg-slate-800 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-4 w-full">
             <div class="flex items-center space-x-3">
                 <label for="format-select" class="text-white font-medium flex-shrink-0">変換先:</label>
                 <select id="format-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -128,7 +107,6 @@
                 </select>
             </div>
 
-            <!-- WebP タイプオプション (位置変更) -->
             <div id="webp-type-options" class="flex items-center space-x-3">
                 <label class="text-sm font-medium text-white flex-shrink-0">タイプ:</label>
                 <label class="flex items-center text-slate-300 cursor-pointer">
@@ -141,24 +119,49 @@
                 </label>
             </div>
             
-            <!-- 共通 品質オプション (位置変更) -->
             <div id="quality-options" class="flex items-center space-x-2">
                 <label for="quality-slider" class="text-sm font-medium text-white flex-shrink-0">品質:</label>
-                <input type="range" id="quality-slider" min="0" max="100" value="90" class="w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
-                <span id="quality-value" class="font-bold text-white w-8 text-right">90</span>
+                <input type="range" id="quality-slider" min="0" max="100" value="90" class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex items-center space-x-1">
+                    <span id="quality-value" class="font-bold text-white w-8 text-right">90</span>
+                    <div class="flex flex-col">
+                        <button id="quality-up" type="button" class="text-slate-400 hover:text-white" title="増やす">
+                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                            </svg>
+                        </button>
+                        <button id="quality-down" type="button" class="text-slate-400 hover:text-white" title="減らす">
+                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- (新規追加) リサイズオプション -->
             <div id="resize-options" class="flex items-center space-x-2">
                 <label for="resize-slider" class="text-sm font-medium text-white flex-shrink-0">リサイズ:</label>
-                <input type="range" id="resize-slider" min="1" max="100" value="100" class="w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
-                <span id="resize-value" class="font-bold text-white w-8 text-right">100</span>
-                <span class="text-sm text-white">%</span>
+                <input type="range" id="resize-slider" min="1" max="100" value="100" class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex items-center space-x-1">
+                    <span id="resize-value" class="font-bold text-white w-8 text-right">100</span>
+                    <span class="text-sm text-white">%</span>
+                    <div class="flex flex-col">
+                        <button id="resize-up" type="button" class="text-slate-400 hover:text-white" title="増やす">
+                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                            </svg>
+                        </button>
+                        <button id="resize-down" type="button" class="text-slate-400 hover:text-white" title="減らす">
+                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
 
-        <!-- 変換ボタンセクション (変更) -->
         <footer class="mt-8 text-center">
             <button id="convert-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-12 rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed w-full">
                 変換してZIPで保存
@@ -174,7 +177,6 @@
             <img src="images/booth-icon.svg" alt="BOOTH" />
     </a>
 
-    <!-- JavaScript ロジック -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const dropZone = document.getElementById('drop-zone');
@@ -200,6 +202,12 @@
             // WebP タイプオプション
             const webpTypeOptions = document.getElementById('webp-type-options');
             const webpTypeRadios = document.querySelectorAll('input[name="webp-type"]');
+
+            // (新規追加) スライダー増減ボタン
+            const qualityUpBtn = document.getElementById('quality-up');
+            const qualityDownBtn = document.getElementById('quality-down');
+            const resizeUpBtn = document.getElementById('resize-up');
+            const resizeDownBtn = document.getElementById('resize-down');
 
             // メディアプールを管理する配列
             const mediaPool = []; // { id, name, size, type, dataUrl, originalFile }
@@ -261,11 +269,10 @@
                 }
                 
                 // inputやselect要素を再帰的に無効化/有効化
-                element.querySelectorAll('input, select').forEach(el => {
+                element.querySelectorAll('input, select, button').forEach(el => {
                     el.disabled = isDisabled;
                 });
             }
-
 
             // --- 変換オプションのリスナー (変更) ---
 
@@ -307,6 +314,37 @@
             resizeSlider.addEventListener('input', (e) => {
                 resizeValue.textContent = e.target.value;
             });
+
+            // (新規追加) 品質スライダーの増減ボタン
+            qualityUpBtn.addEventListener('click', () => {
+                let currentValue = parseInt(qualitySlider.value, 10);
+                let newValue = Math.min(100, currentValue + 1); // 100が上限
+                qualitySlider.value = newValue;
+                qualityValue.textContent = newValue;
+            });
+
+            qualityDownBtn.addEventListener('click', () => {
+                let currentValue = parseInt(qualitySlider.value, 10);
+                let newValue = Math.max(0, currentValue - 1); // 0が下限
+                qualitySlider.value = newValue;
+                qualityValue.textContent = newValue;
+            });
+
+            // (新規追加) リサイズスライダーの増減ボタン
+            resizeUpBtn.addEventListener('click', () => {
+                let currentValue = parseInt(resizeSlider.value, 10);
+                let newValue = Math.min(100, currentValue + 1); // 100が上限
+                resizeSlider.value = newValue;
+                resizeValue.textContent = newValue;
+            });
+
+            resizeDownBtn.addEventListener('click', () => {
+                let currentValue = parseInt(resizeSlider.value, 10);
+                let newValue = Math.max(1, currentValue - 1); // 1が下限
+                resizeSlider.value = newValue;
+                resizeValue.textContent = newValue;
+            });
+
 
             // --- ファイル処理 ---
 
@@ -602,7 +640,6 @@
                 return { filename: newFilename, blob: blob };
             }
 
-
             // --- (変更) 変換ボタンのイベントリスナー (実機能実装) ---
             convertBtn.addEventListener('click', async () => {
                 if (mediaPool.length === 0 || isConverting) return;
@@ -666,7 +703,6 @@
                 }
             });
 
-
             // 初期描画
             renderMediaPool(); // ボタン状態を初期化
             updateConversionOptions(); // オプションの初期状態を設定
@@ -675,5 +711,3 @@
     </script>
 </body>
 </html>
-
-
