@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像ファイル変換</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js" defer></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* ドラッグオーバー時のスタイル */
+        .drag-over {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #262f4d; /* slate-800の暗い版 */
+        }
+        /* WebPラジオボタンのカスタムスタイル */
+        input[type="radio"]:checked {
+            background-color: #3b82f6; /* blue-500 */
+            border-color: #3b82f6;
+        }
+        input[type="radio"] {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #475569; /* slate-600 */
+            border-radius: 50%;
+            /* transition: all 0.2s; (削除) */
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        input[type="radio"]:checked:after {
+            content: '';
+            display: block;
+            width: 0.625rem;
+            height: 0.625rem;
+            background: white;
+            border-radius: 50%;
+            margin: 3px;
+        }
+
+        .github-icon-link {position: fixed; top: 10px; left: 10px; z-index: 999;}
+        .github-icon-link img {width: 32px; height: 32px;}
+        .github-icon-link:hover img {transform: scale(1.1);}
+
+        .booth-icon-link {position: fixed; top: 55px; left: 10px; z-index: 999;}
+        .booth-icon-link img {width: 32px; height: 32px;}
+        .booth-icon-link:hover img {transform: scale(1.1);}
+
+    </style>
+</head>
+<body class="bg-slate-900 text-gray-300 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- ヘッダー (変更: text-centerを追加) -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-white mb-2">画像ファイル変換ツール</h1>
+        </header>
+
+        <!-- 2カラムレイアウトコンテナ -->
+        <div class="flex flex-col md:flex-row md:space-x-8">
+
+            <!-- 左カラム (ファイル入力 + 変換オプション) -->
+            <div class="md:w-2/5 flex flex-col">
+
+                <!-- 1. ファイル入力エリア (左カラム) -->
+                <!-- (変更: transition-colors duration-300 を削除) -->
+                <div id="drop-zone" class="border-4 border-dashed border-slate-700 rounded-lg p-8 text-center cursor-pointer hover:border-blue-600 hover:bg-slate-800 h-96 flex flex-col">
+                    <!-- ファイル入力本体は非表示にし、labelで操作する -->
+                    <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/heic,image/heif,image/gif" class="hidden">
+                    <label for="file-input" class="cursor-pointer flex flex-col items-center justify-center h-full w-full">
+                        <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+                        <p class="mt-2 text-lg font-semibold text-white">ファイルをドラッグ＆ドロップ</p>
+                        <p class="text-sm text-slate-400">またはクリックしてファイルを選択</p>
+                        <!-- 文言変更 -->
+                        <p class="text-xs text-slate-500 mt-2">対応: JPEG, PNG, WebP, BMP, HEIC, GIF</p>
+                    </label>
+                </div>
+                
+                <!-- (変換オプションはここから移動) -->
+
+            </div> <!-- 左カラム終了 -->
+
+            <!-- 3. メディアプール (右カラム) -->
+            <section id="media-pool-section" class="mt-8 md:mt-0 md:w-3/5 flex flex-col">
+                <!-- HEIC変換中のローディング表示 -->
+                <div id="loading-indicator" class="hidden text-center p-4 bg-slate-800 rounded-lg mb-4">
+                    <p class="text-slate-300 animate-pulse">HEICファイルを変換中...</p>
+                </div>
+
+                <!-- 見出しとリストをまとめるコンテナ (h-96に固定) -->
+                <div class="bg-slate-800 rounded-lg p-4 flex flex-col h-96">
+                    <!-- (変更) 見出しとクリアボタンをフレックスコンテナで囲む -->
+                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                        <h2 class="text-2xl font-semibold text-white">メディアプール</h2>
+                        <!-- (変更) クリアボタンのスタイル変更、アイコン削除 -->
+                        <button id="clear-pool-btn" class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" title="すべてクリア" disabled>
+                            すべてクリア
+                        </button>
+                    </div>
+                    
+                    <!-- メディアリスト (残りの高さを埋める) -->
+                    <ul id="media-list" class="space-y-2 overflow-y-auto flex-grow h-0">
+                        <li id="empty-pool-message" class="text-slate-400 text-center py-16">メディアファイルがありません</li>
+                    </ul>
+                </div>
+            </section>
+        
+        </div> <!-- 2カラムレイアウトコンテナ終了 -->
+
+        <!-- 2. 変換オプション (変更: 2カラムコンテナの外、フッターの上に移動) -->
+        <div id="conversion-options" class="mt-8 p-4 bg-slate-800 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-4 w-full">
+            <!-- 変換先プルダウン -->
+            <div class="flex items-center space-x-3">
+                <label for="format-select" class="text-white font-medium flex-shrink-0">変換先:</label>
+                <select id="format-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                    <option value="bmp">BMP</option>
+                </select>
+            </div>
+
+            <!-- WebP タイプオプション (位置変更) -->
+            <div id="webp-type-options" class="flex items-center space-x-3">
+                <label class="text-sm font-medium text-white flex-shrink-0">タイプ:</label>
+                <label class="flex items-center text-slate-300 cursor-pointer">
+                    <input type="radio" name="webp-type" value="lossy" class="mr-1.5" checked>
+                    非可逆
+                </label>
+                <label class="flex items-center text-slate-300 cursor-pointer">
+                    <input type="radio" name="webp-type" value="lossless" class="mr-1.5">
+                    可逆
+                </label>
+            </div>
+            
+            <!-- 共通 品質オプション (位置変更) -->
+            <div id="quality-options" class="flex items-center space-x-2">
+                <label for="quality-slider" class="text-sm font-medium text-white flex-shrink-0">品質:</label>
+                <input type="range" id="quality-slider" min="0" max="100" value="90" class="w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <span id="quality-value" class="font-bold text-white w-8 text-right">90</span>
+            </div>
+
+            <!-- (新規追加) リサイズオプション -->
+            <div id="resize-options" class="flex items-center space-x-2">
+                <label for="resize-slider" class="text-sm font-medium text-white flex-shrink-0">リサイズ:</label>
+                <input type="range" id="resize-slider" min="1" max="100" value="100" class="w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <span id="resize-value" class="font-bold text-white w-8 text-right">100</span>
+                <span class="text-sm text-white">%</span>
+            </div>
+        </div>
+
+
+        <!-- 変換ボタンセクション (変更) -->
+        <footer class="mt-8 text-center">
+            <button id="convert-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-12 rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed w-full">
+                変換してZIPで保存
+            </button>
+        </footer>
+
+    </div>
+
+    <a href="" target="_blank" rel="noopener noreferrer" class="github-icon-link" title="View on GitHub">
+            <img src="images/github-icon.png" alt="GitHub" />
+    </a>
+    <a href="" target="_blank" rel="noopener noreferrer" class="booth-icon-link" title="View on BOOTH">
+            <img src="images/booth-icon.svg" alt="BOOTH" />
+    </a>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const mediaList = document.getElementById('media-list');
+            const mediaPoolSection = document.getElementById('media-pool-section');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const convertBtn = document.getElementById('convert-btn'); // ボタン取得
+            const clearPoolBtn = document.getElementById('clear-pool-btn'); // (新規追加)
+            
+            // 変換オプションのDOM
+            const formatSelect = document.getElementById('format-select');
+            
+            // 共通 品質オプション
+            const qualityOptions = document.getElementById('quality-options');
+            const qualitySlider = document.getElementById('quality-slider');
+            const qualityValue = document.getElementById('quality-value');
+
+            // (新規追加) リサイズオプション
+            const resizeSlider = document.getElementById('resize-slider');
+            const resizeValue = document.getElementById('resize-value');
+
+            // WebP タイプオプション
+            const webpTypeOptions = document.getElementById('webp-type-options');
+            const webpTypeRadios = document.querySelectorAll('input[name="webp-type"]');
+
+            // メディアプールを管理する配列
+            const mediaPool = []; // { id, name, size, type, dataUrl, originalFile }
+
+            // 変換処理中のフラグ
+            let isConverting = false;
+
+            const supportedTypes = [
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+                'image/bmp',
+                'image/gif',
+                'image/heic',
+                'image/heif'
+            ];
+
+            // --- イベントリスナー ---
+
+            // ファイル選択 (クリック)
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+                e.target.value = null;
+            });
+
+            // ドラッグ＆ドロップ
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            // --- ヘルパー関数 (無効化) ---
+            /**
+             * 指定された要素（と内部の入力）を無効化（グレーアウト）または有効化する
+             * @param {HTMLElement} element - 対象のコンテナ要素
+             * @param {boolean} isDisabled - 無効化する場合は true
+             */
+            function setOptionsDisabled(element, isDisabled) {
+                if (isDisabled) {
+                    // (変更: opacity-50 から opacity-25 へ)
+                    element.classList.add('opacity-25', 'pointer-events-none');
+                } else {
+                    // (変更: opacity-50 から opacity-25 へ)
+                    element.classList.remove('opacity-25', 'pointer-events-none');
+                }
+                
+                // inputやselect要素を再帰的に無効化/有効化
+                element.querySelectorAll('input, select').forEach(el => {
+                    el.disabled = isDisabled;
+                });
+            }
+
+
+            // --- 変換オプションのリスナー (変更) ---
+
+            // 変換形式プルダウンの変更
+            function updateConversionOptions() {
+                const selectedFormat = formatSelect.value;
+                // WebPが非可逆(lossy)でない場合（＝可逆(lossless)の場合）は品質スライダーを無効化
+                const isWebpLossy = document.querySelector('input[name="webp-type"]:checked').value === 'lossy';
+
+                if (selectedFormat === 'jpeg') {
+                    setOptionsDisabled(qualityOptions, false); // 品質を有効化
+                    setOptionsDisabled(webpTypeOptions, true); // WebPタイプを無効化
+                } else if (selectedFormat === 'webp') {
+                    setOptionsDisabled(qualityOptions, !isWebpLossy); // 非可逆(lossy)の時だけ品質を有効化
+                    setOptionsDisabled(webpTypeOptions, false); // WebPタイプを有効化
+                } else {
+                    // PNG, BMP
+                    setOptionsDisabled(qualityOptions, true); // 品質を無効化
+                    setOptionsDisabled(webpTypeOptions, true); // WebPタイプを無効化
+                }
+            }
+            formatSelect.addEventListener('change', updateConversionOptions);
+
+            // 共通品質スライダーの変更
+            qualitySlider.addEventListener('input', (e) => {
+                qualityValue.textContent = e.target.value;
+            });
+
+            // WebP圧縮タイプ (ラジオボタン) の変更
+            webpTypeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const isLossy = e.target.value === 'lossy';
+                    // 可逆(lossless)が選択されたら、共通品質スライダーを無効化
+                    setOptionsDisabled(qualityOptions, !isLossy);
+                });
+            });
+
+            // (新規追加) リサイズスライダーの変更
+            resizeSlider.addEventListener('input', (e) => {
+                resizeValue.textContent = e.target.value;
+            });
+
+            // --- ファイル処理 ---
+
+            async function handleFiles(files) {
+                const newFiles = Array.from(files).filter(file => {
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    return supportedTypes.includes(file.type) || ['heic', 'heif'].includes(extension);
+                });
+                
+                if (newFiles.length === 0) return;
+
+                const hasHeic = newFiles.some(f => {
+                    const extension = f.name.split('.').pop().toLowerCase();
+                    return f.type === 'image/heic' || f.type === 'image/heif' || ['heic', 'heif'].includes(extension);
+                });
+
+                if (hasHeic) {
+                    if (typeof heic2any === 'undefined') {
+                        console.error('heic2any library is not loaded.');
+                        loadingIndicator.innerHTML = '<p class="text-red-400">HEIC変換ライブラリの読み込みに失敗しました。</p>';
+                        loadingIndicator.classList.remove('hidden');
+                        return;
+                    }
+                    loadingIndicator.innerHTML = '<p class="text-slate-300 animate-pulse">HEICファイルを変換中...</p>';
+                    loadingIndicator.classList.remove('hidden');
+                }
+
+                const processingPromises = newFiles.map(file => processFile(file));
+                
+                try {
+                    const processedFiles = await Promise.all(processingPromises);
+                    processedFiles.forEach(item => {
+                        if (item) {
+                            mediaPool.push(item);
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error during file processing:", err);
+                } finally {
+                    if (hasHeic) {
+                        loadingIndicator.classList.add('hidden');
+                    }
+                    renderMediaPool(); // 描画＆ボタン状態更新
+                }
+            }
+
+            async function processFile(file) {
+                const id = crypto.randomUUID();
+                let dataUrl;
+                let convertedBlob = null;
+                let displayType = file.type || '不明';
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                try {
+                    if (file.type === 'image/heic' || file.type === 'image/heif' || ['heic', 'heif'].includes(extension)) {
+                        
+                        convertedBlob = await heic2any({
+                            blob: file,
+                            toType: "image/png",
+                            quality: 0.9,
+                        });
+                        dataUrl = await blobToDataURL(convertedBlob);
+                        displayType = `image/png (HEIC/HEIFから変換)`;
+                    
+                    } else if (supportedTypes.includes(file.type)) {
+                        dataUrl = await blobToDataURL(file);
+                    
+                    } else {
+                        console.warn(`Skipping unsupported file: ${file.name}`);
+                        return null;
+                    }
+
+                    return {
+                        id: id,
+                        name: file.name,
+                        size: file.size,
+                        type: displayType,
+                        dataUrl: dataUrl, // 変換処理で使用
+                        originalFile: file,
+                    };
+
+                } catch (err) {
+                    console.error(`Error processing file ${file.name}:`, err);
+                    return null;
+                }
+            }
+
+            function blobToDataURL(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            // --- UI描画 ---
+
+            function renderMediaPool() {
+                const emptyMessage = document.getElementById('empty-pool-message');
+
+                if (mediaPool.length > 0) {
+                    if (emptyMessage) emptyMessage.classList.add('hidden');
+                    convertBtn.disabled = false; // ボタンを有効化
+                    clearPoolBtn.disabled = false; // (新規追加) クリアボタンを有効化
+                } else {
+                    if (emptyMessage) emptyMessage.classList.remove('hidden');
+                    convertBtn.disabled = true; // ボタンを無効化
+                    clearPoolBtn.disabled = true; // (新規追加) クリアボタンを無効化
+                }
+
+                mediaList.innerHTML = ''; // リストをクリア
+                if (mediaPool.length === 0 && emptyMessage) {
+                    mediaList.appendChild(emptyMessage); // 空のメッセージを戻す
+                }
+
+                mediaPool.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-lg shadow-md';
+                    li.dataset.id = item.id;
+
+                    li.innerHTML = `
+                        <div class="flex-grow overflow-hidden mr-4">
+                            <p class="font-medium text-white truncate" title="${item.name}">${item.name}</p>
+                        </div>
+                        <button class="remove-btn text-red-500 hover:text-red-400 flex-shrink-0" title="削除">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    `;
+                    
+                    mediaList.appendChild(li);
+
+                });
+            }
+
+            // メディアプールの削除ボタン
+            mediaList.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-btn');
+                if (removeBtn) {
+                    const li = removeBtn.closest('li');
+                    const id = li.dataset.id;
+                    
+                    
+                    // (変更: setTimeout を削除し、処理を即時実行)
+                    const index = mediaPool.findIndex(item => item.id === id);
+                    if (index > -1) {
+                        mediaPool.splice(index, 1);
+                    }
+                    li.remove();
+                    renderMediaPool(); // プールが空になったかチェックするために再描画
+                }
+            });
+
+            // (新規追加) メディアプールのクリアボタン
+            clearPoolBtn.addEventListener('click', () => {
+                if (mediaPool.length === 0) return;
+                
+                // プールを空にする
+                mediaPool.length = 0;
+                
+                // UIを再描画
+                renderMediaPool();
+            });
+
+
+            // --- (新規追加) 変換ヘルパー関数 ---
+
+            /**
+             * Data URL を Blob に変換
+             */
+            function dataURLtoBlob(dataUrl) {
+                const arr = dataUrl.split(',');
+                const mimeMatch = arr[0].match(/:(.*?);/);
+                if (!mimeMatch) {
+                    throw new Error("Invalid Data URL");
+                }
+                const mime = mimeMatch[1];
+                const bstr = atob(arr[arr.length - 1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new Blob([u8arr], { type: mime });
+            }
+
+            /**
+             * Blob をダウンロードさせる
+             */
+            function saveBlob(blob, filename) {
+                const a = document.createElement('a');
+                document.body.appendChild(a);
+                a.style.display = 'none';
+                const url = window.URL.createObjectURL(blob);
+                a.href = url;
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+
+            /**
+             * Canvas を PNG Blob に変換 (UPNG.js を使用)
+             */
+            async function convertToPng(canvas) {
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                if (typeof UPNG === 'undefined') {
+                    throw new Error('UPNG.jsがロードされていません。');
+                }
+                
+                const pakoLib = (typeof pako !== 'undefined') ? pako : null;
+                if (!pakoLib) {
+                    console.warn('pako.jsが見つかりません。PNG圧縮が最適化されない可能性があります。');
+                }
+
+                const arrayBuffer = imageData.data.buffer;
+                // cnum=0 (ロスレス RGBA), delay=0, pako を渡す
+                const pngArrayBuffer = UPNG.encode([arrayBuffer], canvas.width, canvas.height, 0, 0, pakoLib);
+                return new Blob([pngArrayBuffer], { type: 'image/png' });
+            }
+
+            /**
+             * Canvas を BMP Blob に変換 (Canvas API)
+             */
+            async function convertToBmp(canvas) {
+                const dataUrl = canvas.toDataURL('image/bmp');
+                return dataURLtoBlob(dataUrl);
+            }
+
+            /**
+             * Canvas を JPEG または WebP Blob に変換 (Canvas API)
+             */
+            async function convertWithQuality(canvas, format, quality) {
+                const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/webp';
+                const dataUrl = canvas.toDataURL(mimeType, quality);
+                return dataURLtoBlob(dataUrl);
+            }
+
+            /**
+             * メディアプール内の単一アイテムを変換
+             */
+            async function convertFile(item, format, options) {
+                const img = new Image();
+                
+                // item.dataUrl は HEIC変換後PNG または 元画像の DataURL
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = (err) => reject(new Error(`画像の読み込みに失敗しました: ${item.name}`));
+                    img.src = item.dataUrl;
+                });
+
+                const canvas = document.createElement('canvas');
+
+                // (変更) スケールを適用してCanvasサイズを決定
+                const scale = options.scale || 1.0;
+                // 元のサイズより大きくならないように (scale > 1 の場合も考慮するが、スライダーが100% maxなので不要)
+                // 1px未満にならないように Math.max(1, ...) を追加
+                const newWidth = Math.max(1, Math.floor(img.width * scale));
+                const newHeight = Math.max(1, Math.floor(img.height * scale));
+
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                
+                const ctx = canvas.getContext('2d');
+                // (変更) リサイズして描画
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+
+                let blob;
+                if (format === 'jpeg') {
+                    blob = await convertWithQuality(canvas, 'jpeg', options.quality);
+                } else if (format === 'webp') {
+                    const quality = options.type === 'lossy' ? options.quality : 1.0;
+                    blob = await convertWithQuality(canvas, 'webp', quality);
+                } else if (format === 'png') {
+                    blob = await convertToPng(canvas);
+                } else if (format === 'bmp') {
+                    blob = await convertToBmp(canvas);
+                } else {
+                    throw new Error(`未対応のフォーマットです: ${format}`);
+                }
+
+                // ファイル名の拡張子を変更
+                const baseName = item.name.split('.').slice(0, -1).join('.');
+                // 拡張子がないファイル（まれ）の場合のフォールバック
+                const finalBaseName = baseName || item.name;
+                const newFilename = `${finalBaseName}.${format}`;
+
+                return { filename: newFilename, blob: blob };
+            }
+
+
+            // --- (変更) 変換ボタンのイベントリスナー (実機能実装) ---
+            convertBtn.addEventListener('click', async () => {
+                if (mediaPool.length === 0 || isConverting) return;
+
+                // ライブラリチェック
+                if (typeof JSZip === 'undefined' || typeof UPNG === 'undefined' || typeof pako === 'undefined' || typeof heic2any === 'undefined') {
+                    console.error('必要なライブラリ(JSZip, UPNG, pako, heic2any)がロードされていません。');
+                    // alert() の代わりにコンソールエラーを使用
+                    console.error('エラー: 変換ライブラリの読み込みに失敗しました。');
+                    return;
+                }
+                
+                isConverting = true;
+
+                const selectedFormat = formatSelect.value;
+                let options = {};
+
+                // (変更) リサイズオプションを取得
+                options.scale = parseInt(resizeSlider.value, 10) / 100.0;
+                
+                if (selectedFormat === 'jpeg') {
+                    options.quality = parseInt(qualitySlider.value, 10) / 100.0;
+                } else if (selectedFormat === 'webp') {
+                    options.type = document.querySelector('input[name="webp-type"]:checked').value;
+                    if (options.type === 'lossy') {
+                        options.quality = parseInt(qualitySlider.value, 10) / 100.0;
+                    }
+                }
+
+                console.log(`変換実行: ${mediaPool.length}個のファイルを ${selectedFormat} に変換します。`);
+                console.log('オプション:', options);
+                
+                const originalText = convertBtn.innerText;
+                convertBtn.innerText = '変換中...';
+                convertBtn.disabled = true;
+
+                try {
+                    const zip = new JSZip();
+                    
+                    const conversionPromises = mediaPool.map(item => 
+                        convertFile(item, selectedFormat, options)
+                    );
+                    
+                    const convertedFiles = await Promise.all(conversionPromises);
+                    
+                    convertedFiles.forEach(fileInfo => {
+                        zip.file(fileInfo.filename, fileInfo.blob);
+                    });
+                    
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+                    saveBlob(zipBlob, "converted_images.zip");
+
+                } catch (err) {
+                    console.error('変換またはZIP圧縮中にエラーが発生しました:', err);
+                    // alert() の代わりにコンソールエラーを使用
+                    console.error(`エラー: ${err.message}`);
+                } finally {
+                    convertBtn.innerText = originalText;
+                    convertBtn.disabled = (mediaPool.length === 0);
+                    isConverting = false;
+                }
+            });
+
+
+            // 初期描画
+            renderMediaPool(); // ボタン状態を初期化
+            updateConversionOptions(); // オプションの初期状態を設定
+
+        });
+    </script>
+</body>
+</html>
+
+
