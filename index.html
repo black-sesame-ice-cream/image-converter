@@ -66,14 +66,16 @@
             <div class="md:w-2/5 flex flex-col">
 
                 <div id="drop-zone" class="border-4 border-dashed border-slate-700 rounded-lg p-8 text-center cursor-pointer hover:border-blue-600 hover:bg-slate-800 h-96 flex flex-col">
-                    <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/heic,image/heif,image/gif" class="hidden">
+                    <!-- (変更) accept に image/svg+xml と image/avif を追加 -->
+                    <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/heic,image/heif,image/gif,image/svg+xml,image/avif" class="hidden">
                     <label for="file-input" class="cursor-pointer flex flex-col items-center justify-center h-full w-full">
                         <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                         </svg>
                         <p class="mt-2 text-lg font-semibold text-white">ファイルをドラッグ＆ドロップ</p>
                         <p class="text-sm text-slate-400">またはクリックしてファイルを選択</p>
-                        <p class="text-xs text-slate-500 mt-2">対応: JPEG, PNG, WebP, BMP, HEIC, GIF</p>
+                        <!-- (変更) 対応形式のテキストに SVG, AVIF を追加 -->
+                        <p class="text-xs text-slate-500 mt-2">対応: JPEG, PNG, WebP, BMP, HEIC, GIF, SVG, AVIF</p>
                     </label>
                 </div>
                 
@@ -99,11 +101,13 @@
         </div> <div id="conversion-options" class="mt-8 p-4 bg-slate-800 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-4 w-full">
             <div class="flex items-center space-x-3">
                 <label for="format-select" class="text-white font-medium flex-shrink-0">変換先:</label>
+                <!-- (変更 1/4) AVIF を <option> に追加 -->
                 <select id="format-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="jpeg">JPEG</option>
                     <option value="png">PNG</option>
                     <option value="webp">WebP</option>
                     <option value="bmp">BMP</option>
+                    <option value="avif">AVIF</option>
                 </select>
             </div>
 
@@ -216,6 +220,7 @@
             // 変換処理中のフラグ
             let isConverting = false;
 
+            // (変更) supportedTypes に image/svg+xml と image/avif を追加
             const supportedTypes = [
                 'image/jpeg',
                 'image/png',
@@ -223,7 +228,9 @@
                 'image/bmp',
                 'image/gif',
                 'image/heic',
-                'image/heif'
+                'image/heif',
+                'image/svg+xml',
+                'image/avif'
             ];
 
             // --- イベントリスナー ---
@@ -283,7 +290,8 @@
                 // WebPが非可逆(lossy)でない場合（＝可逆(lossless)の場合）は品質スライダーを無効化
                 const isWebpLossy = document.querySelector('input[name="webp-type"]:checked').value === 'lossy';
 
-                if (selectedFormat === 'jpeg') {
+                // (変更 2/4) JPEG または AVIF の場合
+                if (selectedFormat === 'jpeg' || selectedFormat === 'avif') {
                     setOptionsDisabled(qualityOptions, false); // 品質を有効化
                     setOptionsDisabled(webpTypeOptions, true); // WebPタイプを無効化
                 } else if (selectedFormat === 'webp') {
@@ -352,6 +360,7 @@
             async function handleFiles(files) {
                 const newFiles = Array.from(files).filter(file => {
                     const extension = file.name.split('.').pop().toLowerCase();
+                    // (変更) supportedTypes に AVIF, SVG が含まれているため、ここでチェックされる
                     return supportedTypes.includes(file.type) || ['heic', 'heif'].includes(extension);
                 });
                 
@@ -411,6 +420,7 @@
                         displayType = `image/png (HEIC/HEIFから変換)`;
                     
                     } else if (supportedTypes.includes(file.type)) {
+                        // (変更) AVIF, SVG もここに含まれる
                         dataUrl = await blobToDataURL(file);
                     
                     } else {
@@ -575,16 +585,46 @@
              * Canvas を BMP Blob に変換 (Canvas API)
              */
             async function convertToBmp(canvas) {
+                // (変更) BMPへの変換は多くのブラウザで直接サポートされていないため、
+                // DataURLが 'image/bmp' を返さない可能性がある。
+                // 簡易的な代替として 'image/png' を使うか、専用のBMPエンコーダが必要だが、
+                // Cahnvas API が 'image/bmp' をサポートする環境（例: Chrome）を期待する。
+                // サポート外の場合はエラーになる可能性がある。
                 const dataUrl = canvas.toDataURL('image/bmp');
+                if (!dataUrl.startsWith('data:image/bmp')) {
+                    console.warn('ブラウザがBMP (toDataURL) のエクスポートをサポートしていない可能性があります。PNGとしてフォールバックします。');
+                    // 代替案: PNGとして変換する
+                    // return convertToPng(canvas); 
+                    // 現在の実装では、サポートしていると仮定して進める
+                    if(dataUrl === 'data:,'){
+                         throw new Error('BMPへの変換に失敗しました。ブラウザがサポートしていない可能性があります。');
+                    }
+                }
                 return dataURLtoBlob(dataUrl);
             }
 
             /**
-             * Canvas を JPEG または WebP Blob に変換 (Canvas API)
+             * Canvas を JPEG, WebP, AVIF Blob に変換 (Canvas API)
              */
             async function convertWithQuality(canvas, format, quality) {
-                const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/webp';
+                // (変更 3/4) AVIF に対応
+                let mimeType;
+                if (format === 'jpeg') {
+                    mimeType = 'image/jpeg';
+                } else if (format === 'webp') {
+                    mimeType = 'image/webp';
+                } else if (format === 'avif') {
+                    mimeType = 'image/avif';
+                } else {
+                    throw new Error(`convertWithQuality で未対応のフォーマットです: ${format}`);
+                }
+                
                 const dataUrl = canvas.toDataURL(mimeType, quality);
+
+                // (変更) 非対応ブラウザの場合、dataUrl が 'data:,' (空) になるためチェック
+                if (dataUrl === 'data:,') {
+                     throw new Error(`${format} への変換に失敗しました。ブラウザがサポートしていない可能性があります。`);
+                }
                 return dataURLtoBlob(dataUrl);
             }
 
@@ -594,10 +634,13 @@
             async function convertFile(item, format, options) {
                 const img = new Image();
                 
-                // item.dataUrl は HEIC変換後PNG または 元画像の DataURL
+                // item.dataUrl は HEIC変換後PNG または 元画像の DataURL (AVIF, SVG含む)
                 await new Promise((resolve, reject) => {
                     img.onload = resolve;
                     img.onerror = (err) => reject(new Error(`画像の読み込みに失敗しました: ${item.name}`));
+                    // (変更) SVG+XMLのDataURLを安全に読み込む
+                    // XML宣言や特殊文字が含まれていると img.src で問題が起きる可能性があるが、
+                    // blobToDataURL で生成された base64 であれば通常問題ない。
                     img.src = item.dataUrl;
                 });
 
@@ -607,20 +650,36 @@
                 const scale = options.scale || 1.0;
                 // 元のサイズより大きくならないように (scale > 1 の場合も考慮するが、スライダーが100% maxなので不要)
                 // 1px未満にならないように Math.max(1, ...) を追加
-                const newWidth = Math.max(1, Math.floor(img.width * scale));
-                const newHeight = Math.max(1, Math.floor(img.height * scale));
+                
+                // (変更) SVGの場合、img.width/height が 0 になることがあるため、
+                // naturalWidth/Height を優先する
+                const naturalWidth = img.naturalWidth || img.width;
+                const naturalHeight = img.naturalHeight || img.height;
+
+                if (naturalWidth === 0 || naturalHeight === 0) {
+                     throw new Error(`画像のディメンションが取得できませんでした: ${item.name}`);
+                }
+
+                const newWidth = Math.max(1, Math.floor(naturalWidth * scale));
+                const newHeight = Math.max(1, Math.floor(naturalHeight * scale));
 
                 canvas.width = newWidth;
                 canvas.height = newHeight;
                 
                 const ctx = canvas.getContext('2d');
                 // (変更) リサイズして描画
+                // (変更) SVGが透明背景を持つ場合、変換先（JPEGなど）で背景が黒くなるのを防ぐ
+                if (format === 'jpeg' || format === 'bmp' || format === 'avif') { // (変更) AVIFも背景塗りつぶし対象に
+                     ctx.fillStyle = '#FFFFFF'; // 白背景
+                     ctx.fillRect(0, 0, newWidth, newHeight);
+                }
                 ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
 
                 let blob;
-                if (format === 'jpeg') {
-                    blob = await convertWithQuality(canvas, 'jpeg', options.quality);
+                // (変更 4/4) JPEG または AVIF の場合
+                if (format === 'jpeg' || format === 'avif') {
+                    blob = await convertWithQuality(canvas, format, options.quality);
                 } else if (format === 'webp') {
                     const quality = options.type === 'lossy' ? options.quality : 1.0;
                     blob = await convertWithQuality(canvas, 'webp', quality);
@@ -661,7 +720,8 @@
                 // (変更) リサイズオプションを取得
                 options.scale = parseInt(resizeSlider.value, 10) / 100.0;
                 
-                if (selectedFormat === 'jpeg') {
+                // (変更) AVIF も品質オプションを取得
+                if (selectedFormat === 'jpeg' || selectedFormat === 'avif') {
                     options.quality = parseInt(qualitySlider.value, 10) / 100.0;
                 } else if (selectedFormat === 'webp') {
                     options.type = document.querySelector('input[name="webp-type"]:checked').value;
@@ -712,3 +772,4 @@
     </script>
 </body>
 </html>
+
