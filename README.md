@@ -37,8 +37,13 @@ It supports various input formats (JPEG, PNG, WebP, BMP, HEIC, GIF, SVG, AVIF) a
 2.  Files are added to the "Media Pool." HEIC/HEIF files are automatically processed upon addition.
 3.  From the "Convert to:" (変換先) dropdown, select the desired output format.
     - Supported outputs: JPEG, PNG, WebP, BMP, AVIF
-4.  Adjust the "Quality" (品質) and "Resize" (リサイズ) sliders as needed.
-    - Quality options are available for JPEG, AVIF, and Lossy WebP.
+4.  AAdjust the conversion options as needed:
+    - Quality (品質):
+    - - Adjust the slider. This is available for JPEG, AVIF, and Lossy WebP.
+    - Resize (リサイズ):
+    - - Select a mode: "Percent" (割合指定) or "Pixel" (寸法指定).
+    - - Percent: Adjust the slider to scale the image (e.g., 50%).
+    - - Pixel: Enter the exact target "Width" (幅) and "Height" (高さ). 
 5.  Click the "Convert and Save as ZIP" (変換してZIPで保存) button.
 6.  A ZIP file containing all converted images will be downloaded.
 
@@ -48,8 +53,13 @@ It supports various input formats (JPEG, PNG, WebP, BMP, HEIC, GIF, SVG, AVIF) a
 2.  ファイルが「メディアプール」に追加されます。HEIC/HEIFファイルは追加時に自動的に処理されます。
 3.  「変換先」ドロップダウンから、希望する出力形式を選択します。
     - 対応出力形式: JPEG, PNG, WebP, BMP, AVIF
-4.  必要に応じて「品質」や「リサイズ」のスライダーを調整します。
-    - 品質オプションは JPEG, AVIF, WebP(Lossy) で利用可能です。
+4.  必要に応じて変換オプションを調整します。
+    - 品質 (Quality):
+    - - スライダーで調整します。JPEG, AVIF, WebP(Lossy) で利用可能です。
+    - リサイズ (Resize):
+    - - 「割合指定」または「寸法指定」のモードを選択します。
+    - - 割合指定: スライダーで画像の拡大・縮小率（例: 50%）を指定します。
+    - - 寸法指定: 「幅」と「高さ」に直接ピクセル値を入力します。
 5.  「変換してZIPで保存」ボタンをクリックします。
 6.  変換されたすべての画像を含むZIPファイルがダウンロードされます。
 
