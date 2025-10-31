@@ -30,7 +30,6 @@
             height: 1.25rem;
             border: 2px solid #475569; /* slate-600 */
             border-radius: 50%;
-            /* transition: all 0.2s; (削除) */
             cursor: pointer;
             vertical-align: middle;
         }
@@ -66,7 +65,6 @@
             <div class="md:w-2/5 flex flex-col">
 
                 <div id="drop-zone" class="border-4 border-dashed border-slate-700 rounded-lg p-8 text-center cursor-pointer hover:border-blue-600 hover:bg-slate-800 h-96 flex flex-col">
-                    <!-- (変更) accept に image/svg+xml と image/avif を追加 -->
                     <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/heic,image/heif,image/gif,image/svg+xml,image/avif" class="hidden">
                     <label for="file-input" class="cursor-pointer flex flex-col items-center justify-center h-full w-full">
                         <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -74,7 +72,6 @@
                         </svg>
                         <p class="mt-2 text-lg font-semibold text-white">ファイルをドラッグ＆ドロップ</p>
                         <p class="text-sm text-slate-400">またはクリックしてファイルを選択</p>
-                        <!-- (変更) 対応形式のテキストに SVG, AVIF を追加 -->
                         <p class="text-xs text-slate-500 mt-2">対応: JPEG, PNG, WebP, BMP, HEIC, GIF, SVG, AVIF</p>
                     </label>
                 </div>
@@ -101,7 +98,6 @@
         </div> <div id="conversion-options" class="mt-8 p-4 bg-slate-800 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-4 w-full">
             <div class="flex items-center space-x-3">
                 <label for="format-select" class="text-white font-medium flex-shrink-0">変換先:</label>
-                <!-- (変更 1/4) AVIF を <option> に追加 -->
                 <select id="format-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="jpeg">JPEG</option>
                     <option value="png">PNG</option>
@@ -126,7 +122,7 @@
             
             <div id="quality-options" class="flex items-center space-x-2">
                 <label for="quality-slider" class="text-sm font-medium text-white flex-shrink-0">品質:</label>
-                <input type="range" id="quality-slider" min="0" max="100" value="90" class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <input type="range" id="quality-slider" min="0" max="100" value="90" class="w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
                 <div class="flex items-center space-x-1">
                     <span id="quality-value" class="font-bold text-white w-8 text-right">90</span>
                     <div class="flex flex-col">
@@ -144,26 +140,52 @@
                 </div>
             </div>
 
-            <div id="resize-options" class="flex items-center space-x-2">
-                <label for="resize-slider" class="text-sm font-medium text-white flex-shrink-0">リサイズ:</label>
-                <input type="range" id="resize-slider" min="1" max="100" value="100" class="w-48 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
-                <div class="flex items-center space-x-1">
-                    <span id="resize-value" class="font-bold text-white w-8 text-right">100</span>
-                    <span class="text-sm text-white">%</span>
-                    <div class="flex flex-col">
-                        <button id="resize-up" type="button" class="text-slate-400 hover:text-white" title="増やす">
-                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-                            </svg>
-                        </button>
-                        <button id="resize-down" type="button" class="text-slate-400 hover:text-white" title="減らす">
-                            <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </button>
+            <div id="resize-options-wrapper" class="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <!-- モード選択 -->
+                <div class="flex items-center space-x-2">
+                    <label for="resize-mode-select" class="text-sm font-medium text-white flex-shrink-0">リサイズ:</label>
+                    <!-- (変更) 文言変更 -->
+                    <select id="resize-mode-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="percent" selected>割合指定</option>
+                        <option value="pixel">寸法指定</option>
+                    </select>
+                </div>
+
+                <!-- 1. 割合指定 -->
+                <div id="resize-percent-group" class="flex items-center space-x-2">
+                    <input type="range" id="resize-slider" min="1" max="200" value="100" class="w-56 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    <div class="flex items-center space-x-1">
+                        <span id="resize-value" class="font-bold text-white w-8 text-right">100</span>
+                        <span class="text-sm text-white">%</span>
+                        <div class="flex flex-col">
+                            <button id="resize-up" type="button" class="text-slate-400 hover:text-white" title="増やす">
+                                <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                                </svg>
+                            </button>
+                            <button id="resize-down" type="button" class="text-slate-400 hover:text-white" title="減らす">
+                                <svg class="w-4 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. 寸法指定 -->
+                <div id="resize-pixel-group" class="hidden items-center space-x-2">
+                    <label for="resize-width-input" class="text-sm font-medium text-white flex-shrink-0">幅:</label>
+                    <!-- (変更) max="30000" 追加 -->
+                    <input type="number" id="resize-width-input" min="1" max="30000" value="1000" class="w-20 bg-slate-700 text-white border border-slate-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                    <span class="text-sm text-white">px</span>
+                    
+                    <label for="resize-height-input" class="text-sm font-medium text-white flex-shrink-0 ml-2">高さ:</label>
+                    <!-- (変更) max="30000" 追加 -->
+                    <input type="number" id="resize-height-input" min="1" max="30000" value="1000" class="w-20 bg-slate-700 text-white border border-slate-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                    <span class="text-sm text-white">px</span>
+                </div>
             </div>
+
         </div>
 
 
@@ -189,8 +211,8 @@
             const mediaList = document.getElementById('media-list');
             const mediaPoolSection = document.getElementById('media-pool-section');
             const loadingIndicator = document.getElementById('loading-indicator');
-            const convertBtn = document.getElementById('convert-btn'); // ボタン取得
-            const clearPoolBtn = document.getElementById('clear-pool-btn'); // (新規追加)
+            const convertBtn = document.getElementById('convert-btn');
+            const clearPoolBtn = document.getElementById('clear-pool-btn');
             
             // 変換オプションのDOM
             const formatSelect = document.getElementById('format-select');
@@ -200,7 +222,12 @@
             const qualitySlider = document.getElementById('quality-slider');
             const qualityValue = document.getElementById('quality-value');
 
-            // (新規追加) リサイズオプション
+            // リサイズオプションのDOM
+            const resizeModeSelect = document.getElementById('resize-mode-select');
+            const resizePercentGroup = document.getElementById('resize-percent-group');
+            const resizePixelGroup = document.getElementById('resize-pixel-group');
+            const resizeWidthInput = document.getElementById('resize-width-input');
+            const resizeHeightInput = document.getElementById('resize-height-input');
             const resizeSlider = document.getElementById('resize-slider');
             const resizeValue = document.getElementById('resize-value');
 
@@ -208,7 +235,7 @@
             const webpTypeOptions = document.getElementById('webp-type-options');
             const webpTypeRadios = document.querySelectorAll('input[name="webp-type"]');
 
-            // (新規追加) スライダー増減ボタン
+            // スライダー増減ボタン
             const qualityUpBtn = document.getElementById('quality-up');
             const qualityDownBtn = document.getElementById('quality-down');
             const resizeUpBtn = document.getElementById('resize-up');
@@ -220,7 +247,10 @@
             // 変換処理中のフラグ
             let isConverting = false;
 
-            // (変更) supportedTypes に image/svg+xml と image/avif を追加
+            // (新規追加) 寸法の上限値
+            const MAX_PIXEL_SIZE = 30000;
+            const MIN_PIXEL_SIZE = 1;
+
             const supportedTypes = [
                 'image/jpeg',
                 'image/png',
@@ -269,38 +299,33 @@
              */
             function setOptionsDisabled(element, isDisabled) {
                 if (isDisabled) {
-                    // (変更: opacity-50 から opacity-25 へ)
                     element.classList.add('opacity-25', 'pointer-events-none');
                 } else {
-                    // (変更: opacity-50 から opacity-25 へ)
                     element.classList.remove('opacity-25', 'pointer-events-none');
                 }
                 
-                // inputやselect要素を再帰的に無効化/有効化
                 element.querySelectorAll('input, select, button').forEach(el => {
                     el.disabled = isDisabled;
                 });
             }
 
-            // --- 変換オプションのリスナー (変更) ---
+            // --- 変換オプションのリスナー ---
 
             // 変換形式プルダウンの変更
             function updateConversionOptions() {
                 const selectedFormat = formatSelect.value;
-                // WebPが非可逆(lossy)でない場合（＝可逆(lossless)の場合）は品質スライダーを無効化
                 const isWebpLossy = document.querySelector('input[name="webp-type"]:checked').value === 'lossy';
 
-                // (変更 2/4) JPEG または AVIF の場合
                 if (selectedFormat === 'jpeg' || selectedFormat === 'avif') {
-                    setOptionsDisabled(qualityOptions, false); // 品質を有効化
-                    setOptionsDisabled(webpTypeOptions, true); // WebPタイプを無効化
+                    setOptionsDisabled(qualityOptions, false);
+                    setOptionsDisabled(webpTypeOptions, true);
                 } else if (selectedFormat === 'webp') {
-                    setOptionsDisabled(qualityOptions, !isWebpLossy); // 非可逆(lossy)の時だけ品質を有効化
-                    setOptionsDisabled(webpTypeOptions, false); // WebPタイプを有効化
+                    setOptionsDisabled(qualityOptions, !isWebpLossy);
+                    setOptionsDisabled(webpTypeOptions, false);
                 } else {
                     // PNG, BMP
-                    setOptionsDisabled(qualityOptions, true); // 品質を無効化
-                    setOptionsDisabled(webpTypeOptions, true); // WebPタイプを無効化
+                    setOptionsDisabled(qualityOptions, true);
+                    setOptionsDisabled(webpTypeOptions, true);
                 }
             }
             formatSelect.addEventListener('change', updateConversionOptions);
@@ -314,45 +339,77 @@
             webpTypeRadios.forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     const isLossy = e.target.value === 'lossy';
-                    // 可逆(lossless)が選択されたら、共通品質スライダーを無効化
                     setOptionsDisabled(qualityOptions, !isLossy);
                 });
             });
 
-            // (新規追加) リサイズスライダーの変更
+            // リサイズスライダーの変更
             resizeSlider.addEventListener('input', (e) => {
                 resizeValue.textContent = e.target.value;
             });
 
-            // (新規追加) 品質スライダーの増減ボタン
+            // 品質スライダーの増減ボタン
             qualityUpBtn.addEventListener('click', () => {
                 let currentValue = parseInt(qualitySlider.value, 10);
-                let newValue = Math.min(100, currentValue + 1); // 100が上限
+                let newValue = Math.min(100, currentValue + 1);
                 qualitySlider.value = newValue;
                 qualityValue.textContent = newValue;
             });
 
             qualityDownBtn.addEventListener('click', () => {
                 let currentValue = parseInt(qualitySlider.value, 10);
-                let newValue = Math.max(0, currentValue - 1); // 0が下限
+                let newValue = Math.max(0, currentValue - 1);
                 qualitySlider.value = newValue;
                 qualityValue.textContent = newValue;
             });
 
-            // (新規追加) リサイズスライダーの増減ボタン
+            // リサイズスライダーの増減ボタン
             resizeUpBtn.addEventListener('click', () => {
                 let currentValue = parseInt(resizeSlider.value, 10);
-                let newValue = Math.min(100, currentValue + 1); // 100が上限
+                let newValue = Math.min(100, currentValue + 1);
                 resizeSlider.value = newValue;
                 resizeValue.textContent = newValue;
             });
 
             resizeDownBtn.addEventListener('click', () => {
                 let currentValue = parseInt(resizeSlider.value, 10);
-                let newValue = Math.max(1, currentValue - 1); // 1が下限
+                let newValue = Math.max(1, currentValue - 1);
                 resizeSlider.value = newValue;
                 resizeValue.textContent = newValue;
             });
+
+            // リサイズモード切り替えリスナー
+            resizeModeSelect.addEventListener('change', (e) => {
+                const mode = e.target.value;
+                if (mode === 'percent') {
+                    resizePercentGroup.classList.remove('hidden');
+                    resizePixelGroup.classList.add('hidden');
+                } else { // mode === 'pixel'
+                    resizePercentGroup.classList.add('hidden');
+                    resizePixelGroup.classList.remove('hidden');
+                }
+            });
+
+            // (変更) ピクセル入力欄のバリデーション (ヘルパー関数)
+            function validatePixelInput(e) {
+                // 小数点やマイナス記号を削除し、整数のみを取得
+                let val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10);
+                
+                if (isNaN(val) || val < MIN_PIXEL_SIZE) {
+                    val = MIN_PIXEL_SIZE;
+                } else if (val > MAX_PIXEL_SIZE) {
+                    val = MAX_PIXEL_SIZE;
+                }
+                
+                // e.target.value を string に戻す
+                e.target.value = String(val);
+            }
+            
+            // (変更) 'input' イベントでもバリデーションを実行し、不正な入力を即時修正
+            resizeWidthInput.addEventListener('input', validatePixelInput);
+            resizeWidthInput.addEventListener('change', validatePixelInput);
+            resizeHeightInput.addEventListener('input', validatePixelInput);
+            resizeHeightInput.addEventListener('change', validatePixelInput);
 
 
             // --- ファイル処理 ---
@@ -360,7 +417,6 @@
             async function handleFiles(files) {
                 const newFiles = Array.from(files).filter(file => {
                     const extension = file.name.split('.').pop().toLowerCase();
-                    // (変更) supportedTypes に AVIF, SVG が含まれているため、ここでチェックされる
                     return supportedTypes.includes(file.type) || ['heic', 'heif'].includes(extension);
                 });
                 
@@ -397,7 +453,7 @@
                     if (hasHeic) {
                         loadingIndicator.classList.add('hidden');
                     }
-                    renderMediaPool(); // 描画＆ボタン状態更新
+                    renderMediaPool();
                 }
             }
 
@@ -420,7 +476,6 @@
                         displayType = `image/png (HEIC/HEIFから変換)`;
                     
                     } else if (supportedTypes.includes(file.type)) {
-                        // (変更) AVIF, SVG もここに含まれる
                         dataUrl = await blobToDataURL(file);
                     
                     } else {
@@ -433,7 +488,7 @@
                         name: file.name,
                         size: file.size,
                         type: displayType,
-                        dataUrl: dataUrl, // 変換処理で使用
+                        dataUrl: dataUrl,
                         originalFile: file,
                     };
 
@@ -459,17 +514,17 @@
 
                 if (mediaPool.length > 0) {
                     if (emptyMessage) emptyMessage.classList.add('hidden');
-                    convertBtn.disabled = false; // ボタンを有効化
-                    clearPoolBtn.disabled = false; // (新規追加) クリアボタンを有効化
+                    convertBtn.disabled = false;
+                    clearPoolBtn.disabled = false;
                 } else {
                     if (emptyMessage) emptyMessage.classList.remove('hidden');
-                    convertBtn.disabled = true; // ボタンを無効化
-                    clearPoolBtn.disabled = true; // (新規追加) クリアボタンを無効化
+                    convertBtn.disabled = true;
+                    clearPoolBtn.disabled = true;
                 }
 
-                mediaList.innerHTML = ''; // リストをクリア
+                mediaList.innerHTML = '';
                 if (mediaPool.length === 0 && emptyMessage) {
-                    mediaList.appendChild(emptyMessage); // 空のメッセージを戻す
+                    mediaList.appendChild(emptyMessage);
                 }
 
                 mediaPool.forEach(item => {
@@ -500,30 +555,24 @@
                     const li = removeBtn.closest('li');
                     const id = li.dataset.id;
                     
-                    
-                    // (変更: setTimeout を削除し、処理を即時実行)
                     const index = mediaPool.findIndex(item => item.id === id);
                     if (index > -1) {
                         mediaPool.splice(index, 1);
                     }
                     li.remove();
-                    renderMediaPool(); // プールが空になったかチェックするために再描画
+                    renderMediaPool();
                 }
             });
 
-            // (新規追加) メディアプールのクリアボタン
+            // メディアプールのクリアボタン
             clearPoolBtn.addEventListener('click', () => {
                 if (mediaPool.length === 0) return;
-                
-                // プールを空にする
                 mediaPool.length = 0;
-                
-                // UIを再描画
                 renderMediaPool();
             });
 
 
-            // --- (新規追加) 変換ヘルパー関数 ---
+            // --- 変換ヘルパー関数 ---
 
             /**
              * Data URL を Blob に変換
@@ -576,7 +625,6 @@
                 }
 
                 const arrayBuffer = imageData.data.buffer;
-                // cnum=0 (ロスレス RGBA), delay=0, pako を渡す
                 const pngArrayBuffer = UPNG.encode([arrayBuffer], canvas.width, canvas.height, 0, 0, pakoLib);
                 return new Blob([pngArrayBuffer], { type: 'image/png' });
             }
@@ -585,20 +633,12 @@
              * Canvas を BMP Blob に変換 (Canvas API)
              */
             async function convertToBmp(canvas) {
-                // (変更) BMPへの変換は多くのブラウザで直接サポートされていないため、
-                // DataURLが 'image/bmp' を返さない可能性がある。
-                // 簡易的な代替として 'image/png' を使うか、専用のBMPエンコーダが必要だが、
-                // Cahnvas API が 'image/bmp' をサポートする環境（例: Chrome）を期待する。
-                // サポート外の場合はエラーになる可能性がある。
                 const dataUrl = canvas.toDataURL('image/bmp');
                 if (!dataUrl.startsWith('data:image/bmp')) {
-                    console.warn('ブラウザがBMP (toDataURL) のエクスポートをサポートしていない可能性があります。PNGとしてフォールバックします。');
-                    // 代替案: PNGとして変換する
-                    // return convertToPng(canvas); 
-                    // 現在の実装では、サポートしていると仮定して進める
                     if(dataUrl === 'data:,'){
                          throw new Error('BMPへの変換に失敗しました。ブラウザがサポートしていない可能性があります。');
                     }
+                    console.warn('ブラウザがBMP (toDataURL) のエクスポートをサポートしていない可能性があります。');
                 }
                 return dataURLtoBlob(dataUrl);
             }
@@ -607,7 +647,6 @@
              * Canvas を JPEG, WebP, AVIF Blob に変換 (Canvas API)
              */
             async function convertWithQuality(canvas, format, quality) {
-                // (変更 3/4) AVIF に対応
                 let mimeType;
                 if (format === 'jpeg') {
                     mimeType = 'image/jpeg';
@@ -621,7 +660,6 @@
                 
                 const dataUrl = canvas.toDataURL(mimeType, quality);
 
-                // (変更) 非対応ブラウザの場合、dataUrl が 'data:,' (空) になるためチェック
                 if (dataUrl === 'data:,') {
                      throw new Error(`${format} への変換に失敗しました。ブラウザがサポートしていない可能性があります。`);
                 }
@@ -634,25 +672,14 @@
             async function convertFile(item, format, options) {
                 const img = new Image();
                 
-                // item.dataUrl は HEIC変換後PNG または 元画像の DataURL (AVIF, SVG含む)
                 await new Promise((resolve, reject) => {
                     img.onload = resolve;
                     img.onerror = (err) => reject(new Error(`画像の読み込みに失敗しました: ${item.name}`));
-                    // (変更) SVG+XMLのDataURLを安全に読み込む
-                    // XML宣言や特殊文字が含まれていると img.src で問題が起きる可能性があるが、
-                    // blobToDataURL で生成された base64 であれば通常問題ない。
                     img.src = item.dataUrl;
                 });
 
                 const canvas = document.createElement('canvas');
 
-                // (変更) スケールを適用してCanvasサイズを決定
-                const scale = options.scale || 1.0;
-                // 元のサイズより大きくならないように (scale > 1 の場合も考慮するが、スライダーが100% maxなので不要)
-                // 1px未満にならないように Math.max(1, ...) を追加
-                
-                // (変更) SVGの場合、img.width/height が 0 になることがあるため、
-                // naturalWidth/Height を優先する
                 const naturalWidth = img.naturalWidth || img.width;
                 const naturalHeight = img.naturalHeight || img.height;
 
@@ -660,16 +687,32 @@
                      throw new Error(`画像のディメンションが取得できませんでした: ${item.name}`);
                 }
 
-                const newWidth = Math.max(1, Math.floor(naturalWidth * scale));
-                const newHeight = Math.max(1, Math.floor(naturalHeight * scale));
+                let newWidth, newHeight;
+                
+                if (options.resizeMode === 'percent') {
+                    const scale = options.scale || 1.0;
+                    newWidth = Math.floor(naturalWidth * scale);
+                    newHeight = Math.floor(naturalHeight * scale);
+
+                } else if (options.resizeMode === 'pixel') {
+                    newWidth = options.targetWidth;
+                    newHeight = options.targetHeight;
+                
+                } else {
+                    // フォールバック
+                    newWidth = naturalWidth;
+                    newHeight = naturalHeight;
+                }
+
+                // (変更) MIN_PIXEL_SIZE を使用
+                newWidth = Math.max(MIN_PIXEL_SIZE, newWidth);
+                newHeight = Math.max(MIN_PIXEL_SIZE, newHeight);
 
                 canvas.width = newWidth;
                 canvas.height = newHeight;
                 
                 const ctx = canvas.getContext('2d');
-                // (変更) リサイズして描画
-                // (変更) SVGが透明背景を持つ場合、変換先（JPEGなど）で背景が黒くなるのを防ぐ
-                if (format === 'jpeg' || format === 'bmp' || format === 'avif') { // (変更) AVIFも背景塗りつぶし対象に
+                if (format === 'jpeg' || format === 'bmp' || format === 'avif') {
                      ctx.fillStyle = '#FFFFFF'; // 白背景
                      ctx.fillRect(0, 0, newWidth, newHeight);
                 }
@@ -677,7 +720,6 @@
 
 
                 let blob;
-                // (変更 4/4) JPEG または AVIF の場合
                 if (format === 'jpeg' || format === 'avif') {
                     blob = await convertWithQuality(canvas, format, options.quality);
                 } else if (format === 'webp') {
@@ -691,23 +733,36 @@
                     throw new Error(`未対応のフォーマットです: ${format}`);
                 }
 
-                // ファイル名の拡張子を変更
                 const baseName = item.name.split('.').slice(0, -1).join('.');
-                // 拡張子がないファイル（まれ）の場合のフォールバック
                 const finalBaseName = baseName || item.name;
                 const newFilename = `${finalBaseName}.${format}`;
 
                 return { filename: newFilename, blob: blob };
             }
 
-            // --- (変更) 変換ボタンのイベントリスナー (実機能実装) ---
+            // (変更) 変換ボタンのバリデーションロジック
+            function validateAndGetPixelValue(inputElement) {
+                // 小数点やマイナス記号などを削除し、整数のみを取得
+                let val = parseInt(inputElement.value.replace(/[^0-9]/g, ''), 10);
+                
+                if (isNaN(val) || val < MIN_PIXEL_SIZE) {
+                    val = MIN_PIXEL_SIZE;
+                } else if (val > MAX_PIXEL_SIZE) {
+                    val = MAX_PIXEL_SIZE;
+                }
+                
+                // バリデーション結果をUIに反映
+                inputElement.value = String(val);
+                return val;
+            }
+
+
+            // --- 変換ボタンのイベントリスナー ---
             convertBtn.addEventListener('click', async () => {
                 if (mediaPool.length === 0 || isConverting) return;
 
-                // ライブラリチェック
                 if (typeof JSZip === 'undefined' || typeof UPNG === 'undefined' || typeof pako === 'undefined' || typeof heic2any === 'undefined') {
                     console.error('必要なライブラリ(JSZip, UPNG, pako, heic2any)がロードされていません。');
-                    // alert() の代わりにコンソールエラーを使用
                     console.error('エラー: 変換ライブラリの読み込みに失敗しました。');
                     return;
                 }
@@ -717,10 +772,20 @@
                 const selectedFormat = formatSelect.value;
                 let options = {};
 
-                // (変更) リサイズオプションを取得
-                options.scale = parseInt(resizeSlider.value, 10) / 100.0;
+                // リサイズオプションを取得
+                options.resizeMode = resizeModeSelect.value; // 'percent', 'pixel'
                 
-                // (変更) AVIF も品質オプションを取得
+                if (options.resizeMode === 'percent') {
+                    options.scale = parseInt(resizeSlider.value, 10) / 100.0;
+                } else {
+                    // (変更) 'pixel' の場合、バリデーション関数を経由して値を取得
+                    const width = validateAndGetPixelValue(resizeWidthInput);
+                    const height = validateAndGetPixelValue(resizeHeightInput);
+                    
+                    options.targetWidth = width;
+                    options.targetHeight = height;
+                }
+                
                 if (selectedFormat === 'jpeg' || selectedFormat === 'avif') {
                     options.quality = parseInt(qualitySlider.value, 10) / 100.0;
                 } else if (selectedFormat === 'webp') {
@@ -755,7 +820,6 @@
 
                 } catch (err) {
                     console.error('変換またはZIP圧縮中にエラーが発生しました:', err);
-                    // alert() の代わりにコンソールエラーを使用
                     console.error(`エラー: ${err.message}`);
                 } finally {
                     convertBtn.innerText = originalText;
@@ -765,8 +829,8 @@
             });
 
             // 初期描画
-            renderMediaPool(); // ボタン状態を初期化
-            updateConversionOptions(); // オプションの初期状態を設定
+            renderMediaPool();
+            updateConversionOptions();
 
         });
     </script>
