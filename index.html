@@ -140,11 +140,22 @@
                 </div>
             </div>
 
+            <div id="png-options" class="flex items-center space-x-3">
+                <label for="png-color-depth-select" class="text-sm font-medium text-white flex-shrink-0">色数:</label>
+                <select id="png-color-depth-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="0">フルカラー</option>
+                    <option value="256">8ビット (256色)</option>
+                    <option value="16">4ビット (16色)</option>
+                    <option value="4">2ビット (4色)</option>
+                    <option value="2">1ビット (2色)</option>
+                </select>
+            </div>
+
+
             <div id="resize-options-wrapper" class="flex flex-wrap items-center gap-x-4 gap-y-3">
                 <!-- モード選択 -->
                 <div class="flex items-center space-x-2">
                     <label for="resize-mode-select" class="text-sm font-medium text-white flex-shrink-0">リサイズ:</label>
-                    <!-- (変更) 文言変更 -->
                     <select id="resize-mode-select" class="bg-slate-700 text-white border border-slate-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="percent" selected>割合指定</option>
                         <option value="pixel">寸法指定</option>
@@ -298,6 +309,8 @@
              * @param {boolean} isDisabled - 無効化する場合は true
              */
             function setOptionsDisabled(element, isDisabled) {
+                if (!element) return; // ▼▼▼ 変更（安全対策） ▼▼▼
+                
                 if (isDisabled) {
                     element.classList.add('opacity-25', 'pointer-events-none');
                 } else {
@@ -315,17 +328,32 @@
             function updateConversionOptions() {
                 const selectedFormat = formatSelect.value;
                 const isWebpLossy = document.querySelector('input[name="webp-type"]:checked').value === 'lossy';
+                
+                // ▼▼▼ 変更（ここから） ▼▼▼
+                // PNGオプションのDOMを取得
+                const pngOptions = document.getElementById('png-options');
+                // ▲▲▲ 変更（ここまで） ▲▲▲
 
                 if (selectedFormat === 'jpeg' || selectedFormat === 'avif') {
                     setOptionsDisabled(qualityOptions, false);
                     setOptionsDisabled(webpTypeOptions, true);
+                    setOptionsDisabled(pngOptions, true); // (変更) PNGオプションを無効化
                 } else if (selectedFormat === 'webp') {
                     setOptionsDisabled(qualityOptions, !isWebpLossy);
                     setOptionsDisabled(webpTypeOptions, false);
-                } else {
-                    // PNG, BMP
+                    setOptionsDisabled(pngOptions, true); // (変更) PNGオプションを無効化
+                // ▼▼▼ 変更（ここから） ▼▼▼
+                } else if (selectedFormat === 'png') {
+                    // PNGの場合
                     setOptionsDisabled(qualityOptions, true);
                     setOptionsDisabled(webpTypeOptions, true);
+                    setOptionsDisabled(pngOptions, false); // (変更) PNGオプションを有効化
+                // ▲▲▲ 変更（ここまで） ▲▲▲
+                } else {
+                    // BMP
+                    setOptionsDisabled(qualityOptions, true);
+                    setOptionsDisabled(webpTypeOptions, true);
+                    setOptionsDisabled(pngOptions, true); // (変更) PNGオプションを無効化
                 }
             }
             formatSelect.addEventListener('change', updateConversionOptions);
@@ -611,7 +639,8 @@
             /**
              * Canvas を PNG Blob に変換 (UPNG.js を使用)
              */
-            async function convertToPng(canvas) {
+            // ▼▼▼ 変更（ここから） ▼▼▼
+            async function convertToPng(canvas, options) { // options を引数に追加
                 const ctx = canvas.getContext('2d');
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
@@ -624,10 +653,17 @@
                     console.warn('pako.jsが見つかりません。PNG圧縮が最適化されない可能性があります。');
                 }
 
+                // オプションから色数を取得 (デフォルトは0 = フルカラー)
+                const colorCount = (options && typeof options.pngColorCount === 'number') ? options.pngColorCount : 0;
+
                 const arrayBuffer = imageData.data.buffer;
-                const pngArrayBuffer = UPNG.encode([arrayBuffer], canvas.width, canvas.height, 0, 0, pakoLib);
+                
+                // UPNG.encodeの第4引数 (cnum) に colorCount を渡す
+                // UPNG.encodeの第5引数 (dels) は 0 (アニメーションなし)
+                const pngArrayBuffer = UPNG.encode([arrayBuffer], canvas.width, canvas.height, colorCount, 0, pakoLib);
                 return new Blob([pngArrayBuffer], { type: 'image/png' });
             }
+            // ▲▲▲ 変更（ここまで） ▲▲▲
 
             /**
              * Canvas を BMP Blob に変換 (Canvas API)
@@ -726,7 +762,9 @@
                     const quality = options.type === 'lossy' ? options.quality : 1.0;
                     blob = await convertWithQuality(canvas, 'webp', quality);
                 } else if (format === 'png') {
-                    blob = await convertToPng(canvas);
+                    // ▼▼▼ 変更（ここから） ▼▼▼
+                    blob = await convertToPng(canvas, options); // options を渡す
+                    // ▲▲▲ 変更（ここまで） ▲▲▲
                 } else if (format === 'bmp') {
                     blob = await convertToBmp(canvas);
                 } else {
@@ -793,7 +831,12 @@
                     if (options.type === 'lossy') {
                         options.quality = parseInt(qualitySlider.value, 10) / 100.0;
                     }
+                // ▼▼▼ 変更（ここから） ▼▼▼
+                } else if (selectedFormat === 'png') {
+                    // PNGオプションを取得
+                    options.pngColorCount = parseInt(document.getElementById('png-color-depth-select').value, 10);
                 }
+                // ▲▲▲ 変更（ここまで） ▲▲▲
 
                 console.log(`変換実行: ${mediaPool.length}個のファイルを ${selectedFormat} に変換します。`);
                 console.log('オプション:', options);
@@ -836,4 +879,3 @@
     </script>
 </body>
 </html>
-
